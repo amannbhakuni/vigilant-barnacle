@@ -1,0 +1,75 @@
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+class DriverAssistanceSystem:
+    def __init__(self):
+        self.lane_keeping_model = self.build_neural_network()
+        self.collision_avoidance_model = self.build_neural_network()
+
+    def build_neural_network(self):
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(16, activation='relu', input_shape=(2,)),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        return model
+
+    def train_model(self, model, X, y):
+        model.fit(X, y, epochs=10, verbose=0)
+
+    def simulate(self, sensor_data):
+
+        lane_keeping_prediction = self.lane_keeping_model.predict(np.array([sensor_data]))
+        print(f"Lane Keeping Assistance: {round(lane_keeping_prediction[0][0])}")
+
+
+        collision_avoidance_prediction = self.collision_avoidance_model.predict(np.array([sensor_data]))
+        print(f"Collision Avoidance: {round(collision_avoidance_prediction[0][0])}")
+
+
+        plt.scatter(sensor_data[0], sensor_data[1], marker='o', c='blue', label='Vehicle')
+        if round(lane_keeping_prediction[0][0]) == 1:
+            plt.text(sensor_data[0], sensor_data[1], 'Lane Keeping\nAssistance', fontsize=8, ha='right')
+        if round(collision_avoidance_prediction[0][0]) == 1:
+            plt.text(sensor_data[0], sensor_data[1], 'Collision Avoidance', fontsize=8, ha='left')
+
+        plt.xlabel('X-Axis (Position)')
+        plt.ylabel('Y-Axis (Speed)')
+        plt.title('Driver Assistance System Simulation')
+        plt.legend()
+        plt.show()
+
+if __name__ == "__main__":
+
+    sensor_data_samples = np.array([
+        [10, 50],
+        [12, 48],
+        [8, 52],
+        [15, 45],
+        [9, 51],
+        [11, 49],
+        [14, 46],
+        [10, 50],
+        [13, 47],
+        [7, 53],
+    ])
+
+    # (0: No Assistance, 1: Assistance)
+    lane_keeping_labels = np.array([0, 1, 0, 1, 0, 1, 1, 0, 1, 0])
+
+    # (0: No Avoidance, 1: Avoidance)
+    collision_avoidance_labels = np.array([0, 0, 0, 1, 0, 1, 1, 0, 1, 0])
+
+
+    adas = DriverAssistanceSystem()
+
+
+    adas.train_model(adas.lane_keeping_model, sensor_data_samples, lane_keeping_labels)
+
+
+    adas.train_model(adas.collision_avoidance_model, sensor_data_samples, collision_avoidance_labels)
+
+
+    adas.simulate([10, 50])
